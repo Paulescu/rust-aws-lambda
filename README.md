@@ -261,12 +261,18 @@ cargo lambda build --release --arm64
 ```
 
 This will create a `bootstrap` binary in the `target/lambda/lambda-rust-api` directory.
-
+```
+├── src
+│ ├── http_handler.rs
+│ └── main.rs
+└── target
+  └── lambda
+    └── lambda-rust-api
+        └── bootstrap
+```
 
 ## Deploying the API to AWS Lambda
-To deploy to AWS Lambda you will need:
-
-- An AWS account with a user that has the necessary permissions to deploy to AWS Lambda.
+To deploy to AWS Lambda you will need an AWS account with a user that has the necessary permissions to deploy to AWS Lambda.
 
 From the AWS console IAM page, generate a new access key for your user.
 
