@@ -13,20 +13,20 @@ No less.
 
 
 ### Table of contents
-1. [Why Rust and AWS Lambda are a match made in heaven?](#why-rust-and-aws-lambda-are-a-match-made-in-heaven)
-2. [Our dataset](#our-dataset)
-3. [The tools we will use](#the-tools-we-will-use)
-4. [Bootstrapping the project](#bootstrapping-the-project)
-5. [Developing the API](#developing-the-api)
-6. [Running the API locally](#running-the-api-locally)
-7. [Testing the API](#testing-the-api)
-8. [Building the API binary](#building-the-api-binary)
-8. [Deploying the API to AWS Lambda](#deploying-the-api-to-aws-lambda)
-9. [Invoking the API](#invoking-the-api)
+1. [Why Rust and AWS Lambda are the perfect match?](#why-rust-and-aws-lambda-are-the-perfect-match)
+2. [Our dataset](#our-dataset-📊)
+3. [The tools we will use](#the-tools-we-will-use-🛠️)
+4. [Bootstrapping the project](#bootstrapping-the-project-🥾)
+5. [Developing the API](#developing-the-api-🧑🏻‍💻)
+6. [Running the API locally](#running-the-api-locally-🏃)
+7. [Testing the API](#testing-the-api-🧪)
+8. [Building the API binary](#building-the-api-binary-🏗️)
+8. [Deploying the API to AWS Lambda](#deploying-the-api-to-aws-lambda-🚀)
+9. [Invoking the API](#invoking-the-api-☎️)
 8. [Wanna learn more Real World ML engineering with me?](#wanna-learn-more-real-world-ml-engineering-with-me)
 
 
-## Why Rust and AWS Lambda are a match made in heaven?
+## Why Rust and AWS Lambda are the perfect match?
 
 [Rust](https://www.rust-lang.org/) is a systems programming language that is fast, safe, and easy to use.
 
@@ -51,12 +51,12 @@ time is super fast, which means your cloud bills will be super low.
 And this is what we want, right?
 
 
-## Our dataset
+## Our dataset 📊
 
 The dataset we will use for this example consists of historical taxi trip data from NYC taxis between 2017 and 2024. You can find the raw data
 on [this public website](https://www.nyc.gov/site/tlc/about/tlc-trip-record-data.page).
 
-> This is the kind of data that data engieeners at companies like Uber work with.
+> 💡 This is the kind of data that data engieeners at companies like Uber work with.
 
 Every record in our dataset correponds to one taxi trip
 ```json
@@ -89,7 +89,7 @@ This type of data can be used to solve many real world business problems like:
 
 Now, let's get back to our API!
 
-## The tools we will use
+## The tools we will use 🛠️
 
 We will need to install a few tools to get started:
 
@@ -102,7 +102,7 @@ We will need to install a few tools to get started:
 - [AWS CLI](https://aws.amazon.com/cli/) to deploy your Lambda functions to AWS.
 
 
-## Bootstrapping the project
+## Bootstrapping the project 🥾
 
 You can start a new Rust AWS Lambda project with the following command:
 
@@ -126,7 +126,7 @@ With this command, Cargo Lambda will create a new Rust project with a basic stru
 * The [src/main.rs](./src/main.rs) file is the entry point of our lambda function. No need to edit it.
 * The [src/http_handler.rs](./src/http_handler.rs) file contains the logic of our API. This is the file we will start editing 👨🏻‍💻
 
-## Developing the API
+## Developing the API 🧑🏻‍💻
 
 Our lambda function does (like any other lambda function) 3 things:
 
@@ -146,7 +146,10 @@ The meat of this function is actually done in the [`src/lib.rs`](./src/lib.rs) f
 // lib.rs
 
 // public because we want to use it in the http_handler.rs file
-// async to handles I/O operations efficiently and handle many concurrent requests
+// async to do non-blocking I/O operations, like downloading
+// files from the internet, so we can handle many concurrent requests
+// anyhow::Result to handle errors
+// without having to define a custom error type every time.
 pub async fn get_trips(
     from_ms: i64,
     n_results: i64,
@@ -154,14 +157,18 @@ pub async fn get_trips(
 ) -> anyhow::Result<Vec<Trip>> {
     if fake_data.unwrap_or(false) {
         // if fake_data is true, we return a list of fake trips
+        // we await because get_fake_trips is an async
+        // function. This means it retuns a Future type, that
+        // await unpacks.
         return get_fake_trips(from_ms, n_results).await;
     }
 
     // extract the year and month from the from_ms timestamp
+    // no big deal
     let (year, month) = get_year_and_month(from_ms);
     info!("Extracted year: {}, month: {}", year, month);
 
-    // Download the parquet file from the NYC taxi website
+    // Downloads the parquet file from the NYC taxi website
     info!(
         "Downloading parquet file for year: {}, month: {}",
         year, month
@@ -172,11 +179,13 @@ pub async fn get_trips(
     let trips = get_trips_from_file(&file_path, from_ms, n_results)?;
 
     info!("Returning {} trips", trips.len());
+
+    // return the trips as a Result type with the Ok variant
     Ok(trips)
 }
 ```
 
-### Breath 🧘
+### Take a deep breath 🧘
 
 Don't worry if you don't understand all the details of the code. The first time you see it, it is normal to feel a bit overwhelmed.
 
@@ -187,7 +196,7 @@ I added a few comments to the code to help you understand it. I also recommend y
 * [Let's build a REST API in Rust, part 3](https://www.realworldml.net/blog/let-s-build-a-rest-api-in-rust-part-3)
 
 
-## Running the API locally
+## Running the API locally 🏃
 You can start the API locally with the following command:
 
 ```bash
@@ -202,7 +211,7 @@ curl "http://localhost:9000/get_trips?from_ms=1719849600000&n_results=100"
 ![](./media/cargo_lambda_watch.gif)
 
 
-## Testing the API
+## Testing the API 🧪
 
 Before deploying the API to AWS Lambda, we need to make sure it works as expected.
 
@@ -241,16 +250,61 @@ cargo test
 
 ![](./media/cargo-test.gif)
 
-## Building the API binary
+
+## Building the API binary 🏗️
+Before deploying the API to AWS Lambda, we need to build the lambda function. Remember that Rust is a compiled language, so we need to compile the code before deploying it.
+
+We can do this with the following command:
+
+```bash
+cargo lambda build --release --arm64
+```
+
+This will create a `bootstrap` binary in the `target/lambda/lambda-rust-api` directory.
 
 
+## Deploying the API to AWS Lambda 🚀
+To deploy to AWS Lambda you will need:
 
-## Deploying the API to AWS Lambda
+- An AWS account with a user that has the necessary permissions to deploy to AWS Lambda.
+
+From the AWS console IAM page, generate a new access key for your user.
+
+Save the access key id and secret access key in your `.aws/credentials` file.
+
+```toml
+[NAME_OF_YOUR_AWS_PROFILE]
+aws_access_key_id = YOUR_KEY_ID
+aws_secret_access_key = YOUR_SECRET_KEY
+```
+
+You can now deploy the API to AWS Lambda with the following command:
+
+```bash
+cargo lambda deploy lambda-rust-api \
+    --timeout 10 \
+    --memory-size 1024 \
+    --env-var RUST_LOG=info \
+    --profile YOUR_AWS_PROFILE_NAME # Use the one in your ~/.aws/credentials that corresponds to your AWS user
+```
+
+![](./media/deploy.gif)
 
 
+## Invoking the API ☎️
+You can invoke the API with the following command:
 
-## Invoking the API
+```bash
+cargo lambda invoke lambda-rust-api \
+    --data-file ./sample_request.json \
+    --remote # meaning, we are invoking the API running on AWS remotely, not the local one
+```
 
+And the response will be something like this:
+
+![](./media/invoke.gif)
+
+Super fast. Super cheap. Super Rust.
 
 
 ## Wanna learn more Real World ML engineering with me?

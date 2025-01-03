@@ -88,7 +88,10 @@ pub async fn get_trips(
     let (year, month) = get_year_and_month(from_ms);
     info!("Extracted year: {}, month: {}", year, month);
 
-    // Download the parquet file
+    // Downloads the parquet file from the NYC taxi website
+    // download_parquet_file is an async function that returns a Result type
+    // await unpacks the Future type
+    // ? unpacks the Result type
     info!(
         "Downloading parquet file for year: {}, month: {}",
         year, month
