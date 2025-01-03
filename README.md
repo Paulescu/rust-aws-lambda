@@ -28,7 +28,8 @@ No less.
 
 ## Why Rust and AWS Lambda are a match made in heaven?
 
-Rust is a systems programming language that is fast, safe, and easy to use.
+[Rust](https://www.rust-lang.org/) is a systems programming language that is fast, safe, and easy to use.
+
 I won't lie to you. It is harder to learn than Python or JavaScript.
 But once you get the hang of it, you will be able to build
 - fast,
@@ -37,7 +38,7 @@ But once you get the hang of it, you will be able to build
 
 And dividends will start to flow. Both in terms of time and money.
 
-AWS Lambda, on the other hand, is a serverless platform that allows you to run your code without having to worry about the underlying infrastructure.
+[AWS Lambda](https://aws.amazon.com/lambda/) is a serverless platform that allows you to run your code without having to worry about the underlying infrastructure.
 
 - It is a pay-as-you-go service, so you only pay for what you use.
 - It is super popular among companies, especially in startups that want to build systems that can scale from 0 to 100x in a cost-efficient way, and quickly.
@@ -92,9 +93,13 @@ Now, let's get back to our API!
 
 We will need to install a few tools to get started:
 
-- [The Rust compiler and Cargo package manager](https://www.rust-lang.org/tools/install)
-- [Cargo lambda](https://www.cargo-lambda.info/guide/getting-started.html)
-- [AWS CLI](https://aws.amazon.com/cli/)
+- [The Rust compiler and Cargo package manager](https://www.rust-lang.org/tools/install) to package and compile your code.
+
+- [Rust analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer) to get syntax highlighting and error checking in your editor
+
+- [Cargo lambda](https://www.cargo-lambda.info/guide/getting-started.html) to build and deploy your Lambda functions
+
+- [AWS CLI](https://aws.amazon.com/cli/) to deploy your Lambda functions to AWS.
 
 
 ## Bootstrapping the project
@@ -123,15 +128,118 @@ With this command, Cargo Lambda will create a new Rust project with a basic stru
 
 ## Developing the API
 
+Our lambda function does (like any other lambda function) 3 things:
+
+1. Reads and parses the input parameters from the client request. In our case, the input parameters are
+    - `from_ms`: The start date of the trip in milliseconds since the Unix epoch.
+    - `n_results`: The maximum number of results to return in the response.
+
+2. Does something from these parameters. In our case, it fetches the data from the NYC taxi dataset for the given time period.
+
+3. Returns the result back to the client. In our case, it returns the collection of taxi trips as a JSON.
+
+This is precisely what I have implemented in the [`src/http_handler.rs`](./src/http_handler.rs) file.
+
+The meat of this function is actually done in the [`src/lib.rs`](./src/lib.rs) file, by the `get_trips` function.
+
+```rust
+// lib.rs
+
+// public because we want to use it in the http_handler.rs file
+// async to handles I/O operations efficiently and handle many concurrent requests
+pub async fn get_trips(
+    from_ms: i64,
+    n_results: i64,
+    fake_data: Option<bool>,
+) -> anyhow::Result<Vec<Trip>> {
+    if fake_data.unwrap_or(false) {
+        // if fake_data is true, we return a list of fake trips
+        return get_fake_trips(from_ms, n_results).await;
+    }
+
+    // extract the year and month from the from_ms timestamp
+    let (year, month) = get_year_and_month(from_ms);
+    info!("Extracted year: {}, month: {}", year, month);
+
+    // Download the parquet file from the NYC taxi website
+    info!(
+        "Downloading parquet file for year: {}, month: {}",
+        year, month
+    );
+    let file_path = download_parquet_file(year, month).await?;
+
+    // Load parquet file with Polars, filter by the given time period and return the trips
+    let trips = get_trips_from_file(&file_path, from_ms, n_results)?;
+
+    info!("Returning {} trips", trips.len());
+    Ok(trips)
+}
+```
+
+### Breath 🧘
+
+Don't worry if you don't understand all the details of the code. The first time you see it, it is normal to feel a bit overwhelmed.
+
+I added a few comments to the code to help you understand it. I also recommend you read these previous 3 articles I wrote about Rust.
+
+* [Let's build a REST API in Rust, part 1](https://www.realworldml.net/blog/let-s-build-a-rest-api-in-rust)
+* [Let's build a REST API in Rust, part 2](https://www.realworldml.net/blog/let-s-rust)
+* [Let's build a REST API in Rust, part 3](https://www.realworldml.net/blog/let-s-build-a-rest-api-in-rust-part-3)
 
 
 ## Running the API locally
+You can start the API locally with the following command:
 
+```bash
+cargo lambda watch
+```
+
+This commands starts a local server that you can invoke with your browser or with the following curl command:
+
+```bash
+curl "http://localhost:9000/get_trips?from_ms=1719849600000&n_results=100"
+```
+![](./media/cargo_lambda_watch.gif)
 
 
 ## Testing the API
 
+Before deploying the API to AWS Lambda, we need to make sure it works as expected.
 
+This is super important when you release new versions of your code to production, and you want to make sure it works as expected.
+
+In the `src/http_handler.rs` file, you will find a `#[cfg(test)]` block with one unit test, that sends a sample request to the API and checks if the API returns a 200 OK response.
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use lambda_http::{Request, RequestExt};
+    use std::collections::HashMap;
+
+    #[tokio::test]
+    async fn test_success_response() {
+        let mut query_string_parameters: HashMap<String, String> = HashMap::new();
+        query_string_parameters.insert("from_ms".into(), "1719783621000".into());
+        query_string_parameters.insert("n_results".into(), "50".into());
+
+        let request = Request::default().with_query_string_parameters(query_string_parameters);
+
+        let response = function_handler(request).await.unwrap();
+
+        // Check that the response is 200 OK
+        assert_eq!(response.status(), 200);
+    }
+}
+```
+
+You can run the test with
+
+```bash
+cargo test
+```
+
+![](./media/cargo-test.gif)
 
 ## Building the API binary
 
