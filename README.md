@@ -322,5 +322,4 @@ This is what companies need to build to scale their business.
 
 And this is what you learn with my courses.
 
-Wanna know more?
-[Click here to know more](https://www.realworldml.net/courses)
+**[👉 Start learning today](https://www.realworldml.net/courses)**
