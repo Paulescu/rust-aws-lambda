@@ -21,9 +21,9 @@ No less.
 6. [Running the API locally](#running-the-api-locally)
 7. [Testing the API](#testing-the-api)
 8. [Building the API binary](#building-the-api-binary)
-8. [Deploying the API to AWS Lambda](#deploying-the-api-to-aws-lambda)
-9. [Invoking the API](#invoking-the-api)
-8. [Wanna get hands-on experience building Real World ML systems?](#wanna-get-hands-on-experience-building-real-world-ml-systems)
+9. [Deploying the API to AWS Lambda](#deploying-the-api-to-aws-lambda)
+10. [Invoking the API](#invoking-the-api)
+11. [Wanna build Real World ML systems with me?](#wanna-build-real-world-ml-systems-with-me)
 
 
 ## Why Rust and AWS Lambda are the perfect match?
@@ -36,7 +36,7 @@ But once you get the hang of it, you will be able to build
 - safe,
 - and efficient software.
 
-And dividends will start to flow. Both in terms of time and money.
+And dividends will start to flow. Both in terms of time and money. And don't forget, energy efficiency. Because Rust is greener than Python.
 
 [AWS Lambda](https://aws.amazon.com/lambda/) is a serverless platform that allows you to run your code without having to worry about the underlying infrastructure.
 
@@ -310,10 +310,11 @@ Super cheap.
 Super Rust.
 
 
-## Wanna get hands-on experience building Real World ML systems?
+## Wanna build Real World ML systems with me?
 
 This is what companies need to build to scale their business.
+
 And this is what you learn with my courses.
 
 Wanna know more?
-[Click here](https://www.realworldml.net/courses)
+[Click here to know more](https://www.realworldml.net/courses)
